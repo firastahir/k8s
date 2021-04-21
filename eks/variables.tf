@@ -18,12 +18,14 @@ variable "vpc_id" {
   description = "The VPC the cluser should be created in"
 }
 
-variable "private_subnets" {
-  description = "List of private subnet IDs"
+variable "primary_subnet_ids" {
+  type        = list(string)
+  description = "List of subnet IDs, must be in at least two different availability zones"
 }
 
-variable "public_subnets" {
-  description = "List of private subnet IDs"
+variable "secondary_subnet_ids" {
+  type        = list(string)
+  description = "List of secondary subnet IDs, must be in at least two different availability zones, NON 1918"
 }
 
 variable "kubeconfig_path" {
