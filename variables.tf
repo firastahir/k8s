@@ -38,5 +38,5 @@ variable "primary_subnet_ids" {
 variable "secondary_subnet_ids" {
   type        = list(string)
   description = "List of secondary subnet IDs, must be in at least two different availability zones, NON 1918"
-  default     = ["subnet-6b332f22"]
+  default     = ["subnet-de362a97"]
 }
