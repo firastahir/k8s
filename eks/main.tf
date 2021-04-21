@@ -90,6 +90,49 @@ resource "aws_security_group" "cluster_sg" {
   }
 }
 
+resource "aws_eks_fargate_profile" "main" {
+  cluster_name           = aws_eks_cluster.main.name
+  fargate_profile_name   = "fp-default"
+  pod_execution_role_arn = aws_iam_role.fargate_pod_execution_role.arn
+  subnet_ids             = var.private_subnets.*.id
+
+  selector {
+    namespace = "default"
+  }
+  selector {
+    namespace = "2048-game"
+  }
+  selector {
+    namespace = "kube-system"
+  }
+  selector {
+    namespace = "appmesh-system"
+  }
+  selector {
+    namespace = "alb-ingress"
+  }
+  selector {
+    namespace = "metrics-system"
+  }
+  selector {
+    namespace = "appmesh-gateway"
+  }
+
+  timeouts {
+    create = "30m"
+    delete = "30m"
+  }
+}
+
+resource "kubernetes_namespace" "example" {
+  metadata {
+    labels = {
+      app = "2048"
+    }
+
+    name = "2048-game"
+  }
+}
 
 resource "aws_iam_policy" "AmazonEKSClusterCloudWatchMetricsPolicy" {
   name   = "AmazonEKSClusterCloudWatchMetricsPolicy"
