@@ -124,7 +124,7 @@ resource "aws_eks_cluster" "main" {
   enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
   vpc_config {
-    subnet_ids = concat(var.public_subnets.*.id, var.private_subnets.*.id)
+    subnet_ids = concat(var.primary_subnet_ids, var.secondary_subnet_ids)
   }
 
   timeouts {
@@ -191,35 +191,35 @@ resource "aws_iam_role_policy_attachment" "AmazonEC2ContainerRegistryReadOnly" {
   role       = aws_iam_role.eks_node_group_role.name
 }
 
-resource "aws_eks_node_group" "main" {
-  cluster_name    = aws_eks_cluster.main.name
-  node_group_name = "kube-system"
-  node_role_arn   = aws_iam_role.eks_node_group_role.arn
-  subnet_ids      = var.private_subnets.*.id
+//resource "aws_eks_node_group" "main" {
+//  cluster_name    = aws_eks_cluster.main.name
+//  node_group_name = "kube-system"
+//  node_role_arn   = aws_iam_role.eks_node_group_role.arn
+//  subnet_ids      = var.private_subnets.*.id
 
-  scaling_config {
-    desired_size = 2
-    max_size     = 4
-    min_size     = 2
-  }
+ // scaling_config {
+  //  desired_size = 2
+ //   max_size     = 4
+ //   min_size     = 2
+ // }
 
-  instance_types  = ["t2.micro"]
+ // instance_types  = ["t2.micro"]
 
-  version = var.k8s_version
+ // version = var.k8s_version
 
-  tags = {
-    Name        = "${var.name}-${var.environment}-eks-node-group"
-    Environment = var.environment
-  }
+ // tags = {
+ //   Name        = "${var.name}-${var.environment}-eks-node-group"
+ //   Environment = var.environment
+ // }
 
   # Ensure that IAM Role permissions are created before and deleted after EKS Node Group handling.
   # Otherwise, EKS will not be able to properly delete EC2 Instances and Elastic Network Interfaces.
-  depends_on = [
-    aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy,
-    aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy,
-    aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly,
-  ]
-}
+//  depends_on = [
+//    aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy,
+//    aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy,
+//    aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly,
+//  ]
+//}
 
 data "template_file" "kubeconfig" {
   template = file("${path.module}/templates/kubeconfig.tpl")
