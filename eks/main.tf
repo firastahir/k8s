@@ -26,6 +26,71 @@ data "aws_eks_cluster_auth" "cluster" {
   name = aws_eks_cluster.main.id
 }
 
+resource "aws_security_group" "cluster_sg" {
+  name        = format("%s-sg", var.name)
+  description = "Controls communications within the Cluster including between the managed Kubernetes control plane and compute resources in your AWS account such as worker nodes and Fargate pods."
+  vpc_id      = var.vpc_id
+
+  //Allow all traffic to leave the Cluster
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  //Allow traffic from VPC
+  #RFC 1918, Allow Private Internet Access
+  #TODO Potentially make this environment specific
+  ingress {
+    description = "Metrics Server"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "TCP"
+    cidr_blocks = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+  }
+
+  ingress {
+    from_port   = 10250
+    to_port     = 10250
+    protocol    = "TCP"
+    cidr_blocks = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+  }
+
+  ingress {
+    description = "App Mesh Controller Webhook Server Port"
+    from_port   = 9443
+    to_port     = 9443
+    protocol    = "TCP"
+    cidr_blocks = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+  }
+
+  ingress {
+    description = "Metrics Server Port"
+    from_port   = 4443
+    to_port     = 4443
+    protocol    = "TCP"
+    cidr_blocks = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+  }
+
+  ingress {
+    description = "App Mesh Gateway Port, App Mesh Controller Prometheus Port"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "TCP"
+    cidr_blocks = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+  }
+
+  ingress {
+    description = "NFS Port (EFS)"
+    from_port   = 2049
+    to_port     = 2049
+    protocol    = "TCP"
+    cidr_blocks = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+  }
+}
+
+
 resource "aws_iam_policy" "AmazonEKSClusterCloudWatchMetricsPolicy" {
   name   = "AmazonEKSClusterCloudWatchMetricsPolicy"
   policy = <<EOF
@@ -125,6 +190,7 @@ resource "aws_eks_cluster" "main" {
 
   vpc_config {
     subnet_ids = concat(var.primary_subnet_ids, var.secondary_subnet_ids)
+    security_group_ids      = [aws_security_group.cluster_sg.id]
   }
 
   timeouts {
