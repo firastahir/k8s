@@ -5,6 +5,9 @@ terraform {
 provider "aws" {
   version = "~> 2.44"
   region  = var.region
+  assume_role {
+    role_arn     = "arn:aws:iam::598202605839:role/NextGenAdminAccess"
+  }
 }
 
 module "eks" {
