@@ -32,7 +32,7 @@ variable "vpc_id" {
 variable "primary_subnet_ids" {
   type        = list(string)
   description = "List of subnet IDs, must be in at least two different availability zones"
-  default     = ["subnet-1bda207d"]
+  default     = ["subnet-76d92310"]
 }
 
 variable "secondary_subnet_ids" {
