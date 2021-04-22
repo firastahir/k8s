@@ -388,7 +388,6 @@ resource "null_resource" "eks_cluster_ready" {
   }
 
   provisioner "local-exec" {
-    # command = "python3 ${path.module}/scripts/cluster_readiness.py ${var.name} ${aws_eks_cluster.eks_cluster.endpoint}"
     command = "aws eks wait cluster-active --name ${aws_eks_cluster.main.name} --profile sandbox"
   }
 
