@@ -90,6 +90,17 @@ resource "aws_security_group" "cluster_sg" {
   }
 }
 
+resource "aws_iam_policy" "eks_service_policy" {
+  name        = format("%s-service-policy", var.name)
+  description = "iam service policy for eks cluster"
+  #path        = "/TF"
+  policy      = file("./eks/templates/eks-service-policy.json")
+
+  lifecycle {
+    ignore_changes = [path]
+  }
+}
+
 resource "aws_iam_role" "fargate_pod_execution_role" {
   name                  = "${var.name}-eks-fargate-pod-execution-role"
   force_detach_policies = true
@@ -143,16 +154,6 @@ resource "aws_eks_fargate_profile" "main" {
   timeouts {
     create = "30m"
     delete = "30m"
-  }
-}
-
-resource "kubernetes_namespace" "example" {
-  metadata {
-    labels = {
-      app = "2048"
-    }
-
-    name = "2048-game"
   }
 }
 
@@ -217,9 +218,19 @@ resource "aws_iam_role" "eks_cluster_role" {
 POLICY
 }
 
+resource "aws_iam_role_policy_attachment" "eks_service_policy_attachment" {
+  policy_arn = aws_iam_policy.eks_service_policy.arn
+  role       = aws_iam_role.eks_cluster_role.name
+}
+
 resource "aws_iam_role_policy_attachment" "AmazonEKSClusterPolicy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
   role       = aws_iam_role.eks_cluster_role.name
+}
+
+resource "aws_iam_role_policy_attachment" "eks_cluster_policy_attachment" {
+  role       = aws_iam_role.eks_cluster_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
 resource "aws_iam_role_policy_attachment" "AmazonEKSServicePolicy" {
@@ -256,6 +267,8 @@ resource "aws_eks_cluster" "main" {
   vpc_config {
     subnet_ids = concat(var.primary_subnet_ids, var.secondary_subnet_ids)
     security_group_ids      = [aws_security_group.cluster_sg.id]
+    endpoint_private_access = true
+    endpoint_public_access  = false
   }
 
   timeouts {
@@ -366,6 +379,20 @@ data "template_file" "kubeconfig" {
 resource "local_file" "kubeconfig" {
   content  = data.template_file.kubeconfig.rendered
   filename = pathexpand("${var.kubeconfig_path}/config")
+}
+
+resource "null_resource" "eks_cluster_ready" {
+
+  triggers = {
+    cluster = aws_eks_cluster.main.arn
+  }
+
+  provisioner "local-exec" {
+    # command = "python3 ${path.module}/scripts/cluster_readiness.py ${var.name} ${aws_eks_cluster.eks_cluster.endpoint}"
+    command = "aws eks wait cluster-active --name ${aws_eks_cluster.main.name} --profile sandbox"
+  }
+
+  depends_on = [aws_eks_cluster.main]
 }
 
 output "kubectl_config" {
