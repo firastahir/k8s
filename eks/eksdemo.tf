@@ -1,6 +1,6 @@
 resource "kubernetes_namespace" "eksdemo-ns" {
   metadata {
-    name = "eksdem-ns"
+    name = "eksdemo-ns"
   }
 }
 
@@ -11,7 +11,7 @@ resource "aws_eks_fargate_profile" "ecsdemo-profile" {
   subnet_ids             = var.secondary_subnet_ids
 
   selector {
-    namespace = kubernetes_namespace.ecsdemo-ns.id
+    namespace = "eksdemo-ns"
   }
   timeouts {
     create = "30m"
@@ -22,7 +22,7 @@ resource "aws_eks_fargate_profile" "ecsdemo-profile" {
 resource "kubernetes_deployment" "crystal" {
   metadata {
     name      = "deployment-crystal"
-    namespace = kubernetes_namespace.ecsdemo-ns.id
+    namespace = "eksdemo-ns"
     labels    = {
       app = "ecsdemo-crystal"
     }
@@ -61,6 +61,7 @@ resource "kubernetes_deployment" "crystal" {
 resource "kubernetes_service" "crystal" {
   metadata {
     name      = "ecsdemo-crystal"
+    namespace = "eksdemo-ns"
   }
   spec {
     selector = {
@@ -82,7 +83,7 @@ resource "kubernetes_service" "crystal" {
 resource "kubernetes_deployment" "nodejs" {
   metadata {
     name      = "deployment-nodejs"
-    namespace = kubernetes_namespace.ecsdemo-ns.id
+    namespace = "eksdemo-ns"
     labels    = {
       app = "ecsdemo-nodejs"
     }
@@ -121,6 +122,7 @@ resource "kubernetes_deployment" "nodejs" {
 resource "kubernetes_service" "nodejs" {
   metadata {
     name      = "ecsdemo-nodejs"
+    namespace = "eksdemo-ns"
   }
   spec {
     selector = {
@@ -142,7 +144,7 @@ resource "kubernetes_service" "nodejs" {
 resource "kubernetes_deployment" "frontend" {
   metadata {
     name      = "deployment-frontend"
-    namespace = kubernetes_namespace.ecsdemo-ns.id
+    namespace = "eksdemo-ns"
     labels    = {
       app = "ecsdemo-frontend"
     }
@@ -189,6 +191,7 @@ resource "kubernetes_deployment" "frontend" {
 resource "kubernetes_service" "frontend" {
   metadata {
     name      = "ecsdemo-frontend"
+    namespace = "eksdemo-ns"
   }
   spec {
     selector = {
@@ -212,6 +215,7 @@ resource "kubernetes_service" "frontend" {
 resource "kubernetes_ingress" "frontend" {
   metadata {
     name      = "nginx-ingress"
+    namespace = "eksdemo-ns"
     annotations = {
       "kubernetes.io/ingress.class"           = "alb"
       "alb.ingress.kubernetes.io/scheme"      = "internal"
@@ -226,7 +230,7 @@ resource "kubernetes_ingress" "frontend" {
     rule {
       http {
         path {
-          path = "/*"
+          path = "/"
           backend {
             service_name = "ecsdemo-frontend"
             service_port = 80
