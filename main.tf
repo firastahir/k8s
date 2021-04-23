@@ -21,3 +21,12 @@ module "eks" {
   secondary_subnet_ids  = var.secondary_subnet_ids
   kubeconfig_path = var.kubeconfig_path
 }
+
+module "ingress" {
+  source       = "./ingress"
+  name         = var.name
+  environment  = var.environment
+  region       = var.region
+  vpc_id       = var.vpc_id
+  cluster_id   = module.eks.cluster_id
+}
