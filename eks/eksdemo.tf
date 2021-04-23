@@ -56,6 +56,7 @@ resource "kubernetes_deployment" "crystal" {
       }
     }
   }
+  depends_on = [kubernetes_service.frontend]
 }
 
 resource "kubernetes_service" "crystal" {
@@ -77,7 +78,7 @@ resource "kubernetes_service" "crystal" {
     type = "NodePort"
   }
 
-  depends_on = [kubernetes_deployment.crystal]
+  depends_on = [aws_eks_fargate_profile.ecsdemo-profile]
 }
 
 resource "kubernetes_deployment" "nodejs" {
@@ -117,6 +118,7 @@ resource "kubernetes_deployment" "nodejs" {
       }
     }
   }
+  depends_on = [aws_eks_fargate_profile.ecsdemo-profile]
 }
 
 resource "kubernetes_service" "nodejs" {
@@ -186,6 +188,7 @@ resource "kubernetes_deployment" "frontend" {
       }
     }
   }
+  depends_on = [aws_eks_fargate_profile.ecsdemo-profile]
 }
 
 resource "kubernetes_service" "frontend" {
