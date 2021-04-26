@@ -1,0 +1,88 @@
+resource "kubernetes_deployment" "dokuwiki" {
+  metadata {
+    name      = "deployment-dokuwiki"
+    labels    = {
+      app = "dokuwiki"
+    }
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "dokuwiki"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "dokuwiki"
+        }
+      }
+
+      spec {
+        container {
+          image = "598202605839.dkr.ecr.us-west-2.amazonaws.com/demo/api:dokuwiki"
+          name  = "dokuwiki"
+
+          port {
+            container_port = 8080
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service" "dokuwiki" {
+  metadata {
+    name      = "service-dokuwiki"
+  }
+  spec {
+    selector = {
+      app = "dokuwiki"
+    }
+
+    port {
+      port        = 80
+      target_port = 8080
+      protocol    = "TCP"
+    }
+
+    type = "NodePort"
+  }
+
+  depends_on = [kubernetes_deployment.dokuwiki]
+}
+
+resource "kubernetes_ingress" "dokuwiki" {
+  metadata {
+    name      = "dokuwiki-ingress"
+    annotations = {
+      "kubernetes.io/ingress.class"           = "alb"
+      "alb.ingress.kubernetes.io/scheme"      = "internal"
+      "alb.ingress.kubernetes.io/target-type" = "ip"
+    }
+    labels = {
+        "app" = "dokuwiki-ingress"
+    }
+  }
+
+  spec {
+    rule {
+      http {
+        path {
+          path = "/*"
+          backend {
+            service_name = "service-dokuwiki"
+            service_port = 80
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [kubernetes_service.dokuwiki]
+}
