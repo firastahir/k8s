@@ -4,9 +4,9 @@ resource "kubernetes_namespace" "eksdemo-ns" {
   }
 }
 
-resource "aws_eks_fargate_profile" "ecsdemo-profile" {
+resource "aws_eks_fargate_profile" "eksdemo-profile" {
   cluster_name           = aws_eks_cluster.main.name
-  fargate_profile_name   = "ecsdemo-profile"
+  fargate_profile_name   = "eksdemo-profile"
   pod_execution_role_arn = aws_iam_role.fargate_pod_execution_role.arn
   subnet_ids             = var.secondary_subnet_ids
 
@@ -24,7 +24,7 @@ resource "kubernetes_deployment" "crystal" {
     name      = "deployment-crystal"
     namespace = "eksdemo-ns"
     labels    = {
-      app = "ecsdemo-crystal"
+      app = "eksdemo-crystal"
     }
   }
 
@@ -33,21 +33,21 @@ resource "kubernetes_deployment" "crystal" {
 
     selector {
       match_labels = {
-        app = "ecsdemo-crystal"
+        app = "eksdemo-crystal"
       }
     }
 
     template {
       metadata {
         labels = {
-          app = "ecsdemo-crystal"
+          app = "eksdemo-crystal"
         }
       }
 
       spec {
         container {
           image = "598202605839.dkr.ecr.us-west-2.amazonaws.com/dj:crystal"
-          name  = "ecsdemo-crystal"
+          name  = "eksdemo-crystal"
 
           port {
             container_port = 3000
@@ -56,17 +56,17 @@ resource "kubernetes_deployment" "crystal" {
       }
     }
   }
-  depends_on = [kubernetes_service.frontend]
+  depends_on = [aws_eks_fargate_profile.eksdemo-profile]
 }
 
 resource "kubernetes_service" "crystal" {
   metadata {
-    name      = "ecsdemo-crystal"
+    name      = "eksdemo-crystal"
     namespace = "eksdemo-ns"
   }
   spec {
     selector = {
-      app = "ecsdemo-crystal"
+      app = "eksdemo-crystal"
     }
 
     port {
@@ -78,7 +78,7 @@ resource "kubernetes_service" "crystal" {
     type = "NodePort"
   }
 
-  depends_on = [aws_eks_fargate_profile.ecsdemo-profile]
+  depends_on = [kubernetes_deployment.crystal]
 }
 
 resource "kubernetes_deployment" "nodejs" {
@@ -86,7 +86,7 @@ resource "kubernetes_deployment" "nodejs" {
     name      = "deployment-nodejs"
     namespace = "eksdemo-ns"
     labels    = {
-      app = "ecsdemo-nodejs"
+      app = "eksdemo-nodejs"
     }
   }
 
@@ -95,21 +95,21 @@ resource "kubernetes_deployment" "nodejs" {
 
     selector {
       match_labels = {
-        app = "ecsdemo-nodejs"
+        app = "eksdemo-nodejs"
       }
     }
 
     template {
       metadata {
         labels = {
-          app = "ecsdemo-nodejs"
+          app = "eksdemo-nodejs"
         }
       }
 
       spec {
         container {
           image = "598202605839.dkr.ecr.us-west-2.amazonaws.com/dj:nodejs"
-          name  = "ecsdemo-nodejs"
+          name  = "eksdemo-nodejs"
 
           port {
             container_port = 3000
@@ -118,17 +118,17 @@ resource "kubernetes_deployment" "nodejs" {
       }
     }
   }
-  depends_on = [aws_eks_fargate_profile.ecsdemo-profile]
+  depends_on = [aws_eks_fargate_profile.eksdemo-profile]
 }
 
 resource "kubernetes_service" "nodejs" {
   metadata {
-    name      = "ecsdemo-nodejs"
+    name      = "eksdemo-nodejs"
     namespace = "eksdemo-ns"
   }
   spec {
     selector = {
-      app = "ecsdemo-nodejs"
+      app = "eksdemo-nodejs"
     }
 
     port {
@@ -148,7 +148,7 @@ resource "kubernetes_deployment" "frontend" {
     name      = "deployment-frontend"
     namespace = "eksdemo-ns"
     labels    = {
-      app = "ecsdemo-frontend"
+      app = "eksdemo-frontend"
     }
   }
 
@@ -157,48 +157,48 @@ resource "kubernetes_deployment" "frontend" {
 
     selector {
       match_labels = {
-        app = "ecsdemo-frontend"
+        app = "eksdemo-frontend"
       }
     }
 
     template {
       metadata {
         labels = {
-          app = "ecsdemo-frontend"
+          app = "eksdemo-frontend"
         }
       }
 
       spec {
         container {
           image = "598202605839.dkr.ecr.us-west-2.amazonaws.com/dj:frontend"
-          name  = "ecsdemo-frontend"
+          name  = "eksdemo-frontend"
 
           port {
             container_port = 3000
           }
           env {
             name = "CRYSTAL_URL"
-            value = "http://ecsdemo-crystal.eksdemo-ns.svc.cluster.local/crystal"
+            value = "http://eksdemo-crystal.eksdemo-ns.svc.cluster.local/crystal"
           }
           env {
             name = "NODEJS_URL"
-            value = "http://ecsdemo-nodejs.eksdemo-ns.svc.cluster.local/"
+            value = "http://eksdemo-nodejs.eksdemo-ns.svc.cluster.local/"
           }
         }
       }
     }
   }
-  depends_on = [aws_eks_fargate_profile.ecsdemo-profile]
+  depends_on = [aws_eks_fargate_profile.eksdemo-profile]
 }
 
 resource "kubernetes_service" "frontend" {
   metadata {
-    name      = "ecsdemo-frontend"
+    name      = "eksdemo-frontend"
     namespace = "eksdemo-ns"
   }
   spec {
     selector = {
-      app = "ecsdemo-frontend"
+      app = "eksdemo-frontend"
     }
 
     port {
@@ -225,7 +225,7 @@ resource "kubernetes_ingress" "frontend" {
       "alb.ingress.kubernetes.io/target-type" = "ip"
     }
     labels = {
-        "app" = "ecsdemo-frontend"
+        "app" = "eksdemo-frontend"
     }
   }
 
@@ -235,7 +235,7 @@ resource "kubernetes_ingress" "frontend" {
         path {
           path = "/"
           backend {
-            service_name = "ecsdemo-frontend"
+            service_name = "eksdemo-frontend"
             service_port = 80
           }
         }
