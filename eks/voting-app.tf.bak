@@ -1,0 +1,393 @@
+resource "kubernetes_namespace" "voting-ns" {
+  metadata {
+    name = "voting-ns"
+  }
+}
+
+resource "aws_eks_fargate_profile" "voting-profile" {
+  cluster_name           = aws_eks_cluster.main.name
+  fargate_profile_name   = "voting-profile"
+  pod_execution_role_arn = aws_iam_role.fargate_pod_execution_role.arn
+  subnet_ids             = var.secondary_subnet_ids
+
+  selector {
+    namespace = "voting-ns"
+  }
+  timeouts {
+    create = "30m"
+    delete = "30m"
+  }
+}
+
+resource "kubernetes_deployment" "vote" {
+  metadata {
+    name      = "deployment-vote"
+    namespace = "voting-ns"
+    labels = {
+      app = "vote"
+    }
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "vote"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "vote"
+        }
+      }
+
+      spec {
+        container {
+          image = "598202605839.dkr.ecr.us-west-2.amazonaws.com/voting-app:vote"
+          name  = "vote"
+
+          port {
+            container_port = 80
+          }
+        }
+      }
+    }
+  }
+  depends_on = [aws_eks_fargate_profile.voting-profile]
+}
+
+resource "kubernetes_service" "vote" {
+  metadata {
+    name      = "vote"
+    namespace = "voting-ns"
+  }
+  spec {
+    selector = {
+      app = "vote"
+    }
+
+    port {
+      port        = 31002
+      target_port = 80
+      protocol    = "TCP"
+    }
+
+    type = "NodePort"
+  }
+
+  depends_on = [kubernetes_deployment.vote]
+}
+
+resource "kubernetes_deployment" "vote-ui" {
+  metadata {
+    name      = "deployment-vote-ui"
+    namespace = "voting-ns"
+    labels = {
+      app = "vote-ui"
+    }
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "vote-ui"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "vote-ui"
+        }
+      }
+
+      spec {
+        container {
+          image = "598202605839.dkr.ecr.us-west-2.amazonaws.com/voting-app:vote-ui"
+          name  = "vote-ui"
+
+          port {
+            container_port = 80
+          }
+        }
+      }
+    }
+  }
+  depends_on = [aws_eks_fargate_profile.voting-profile]
+}
+
+resource "kubernetes_service" "vote-ui" {
+  metadata {
+    name      = "vote-ui"
+    namespace = "voting-ns"
+  }
+  spec {
+    selector = {
+      app = "vote-ui"
+    }
+
+    port {
+      port        = 31000
+      target_port = 80
+      protocol    = "TCP"
+    }
+
+    type = "NodePort"
+  }
+
+  depends_on = [kubernetes_deployment.vote-ui]
+}
+
+resource "kubernetes_ingress" "vote-ui" {
+  metadata {
+    name      = "vote-ui-ingress"
+    namespace = "voting-ns"
+    annotations = {
+      "kubernetes.io/ingress.class"           = "alb"
+      "alb.ingress.kubernetes.io/scheme"      = "internal"
+      "alb.ingress.kubernetes.io/target-type" = "ip"
+    }
+    labels = {
+      "app" = "vote-ui"
+    }
+  }
+
+  spec {
+    rule {
+      http {
+        path {
+          path = "/"
+          backend {
+            service_name = "vote-ui"
+            service_port = 80
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [kubernetes_service.vote-ui]
+}
+
+resource "kubernetes_deployment" "result" {
+  metadata {
+    name      = "deployment-result"
+    namespace = "voting-ns"
+    labels = {
+      app = "result"
+    }
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "result"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "result"
+        }
+      }
+
+      spec {
+        container {
+          image = "598202605839.dkr.ecr.us-west-2.amazonaws.com/voting-app:result"
+          name  = "result"
+
+          port {
+            container_port = 80
+          }
+        }
+      }
+    }
+  }
+  depends_on = [aws_eks_fargate_profile.voting-profile]
+}
+
+resource "kubernetes_service" "result" {
+  metadata {
+    name      = "result"
+    namespace = "voting-ns"
+  }
+  spec {
+    selector = {
+      app = "result"
+    }
+
+    port {
+      port        = 31003
+      target_port = 80
+      protocol    = "TCP"
+    }
+
+    type = "NodePort"
+  }
+
+  depends_on = [kubernetes_deployment.result]
+}
+
+resource "kubernetes_deployment" "result-ui" {
+  metadata {
+    name      = "deployment-result-ui"
+    namespace = "voting-ns"
+    labels = {
+      app = "result-ui"
+    }
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "result-ui"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "result-ui"
+        }
+      }
+
+      spec {
+        container {
+          image = "598202605839.dkr.ecr.us-west-2.amazonaws.com/voting-app:result-ui"
+          name  = "result-ui"
+
+          port {
+            container_port = 80
+          }
+        }
+      }
+    }
+  }
+  depends_on = [aws_eks_fargate_profile.voting-profile]
+}
+
+resource "kubernetes_service" "result-ui" {
+  metadata {
+    name      = "result-ui"
+    namespace = "voting-ns"
+  }
+  spec {
+    selector = {
+      app = "result-ui"
+    }
+
+    port {
+      port        = 31001
+      target_port = 80
+      protocol    = "TCP"
+    }
+
+    type = "NodePort"
+  }
+
+  depends_on = [kubernetes_deployment.result-ui]
+}
+
+resource "kubernetes_ingress" "result-ui" {
+  metadata {
+    name      = "result-ui-ingress"
+    namespace = "voting-ns"
+    annotations = {
+      "kubernetes.io/ingress.class"           = "alb"
+      "alb.ingress.kubernetes.io/scheme"      = "internal"
+      "alb.ingress.kubernetes.io/target-type" = "ip"
+    }
+    labels = {
+      "app" = "result-ui"
+    }
+  }
+
+  spec {
+    rule {
+      http {
+        path {
+          path = "/"
+          backend {
+            service_name = "result-ui"
+            service_port = 80
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [kubernetes_service.result-ui]
+}
+
+resource "kubernetes_deployment" "nats" {
+  metadata {
+    name      = "deployment-nats"
+    namespace = "voting-ns"
+    labels = {
+      app = "nats"
+    }
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "nats"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "nats"
+        }
+      }
+
+      spec {
+        container {
+          image = "598202605839.dkr.ecr.us-west-2.amazonaws.com/voting-app:nats"
+          name  = "nats"
+
+          port {
+            container_port = 4222
+          }
+        }
+      }
+    }
+  }
+  depends_on = [aws_eks_fargate_profile.voting-profile]
+}
+
+resource "kubernetes_service" "nats" {
+  metadata {
+    name      = "nats"
+    namespace = "voting-ns"
+  }
+  spec {
+    selector = {
+      app = "nats"
+    }
+
+    port {
+      port        = 4222
+      target_port = 4222
+      protocol    = "TCP"
+    }
+
+    type = "NodePort"
+  }
+
+  depends_on = [kubernetes_deployment.nats]
+}
+
