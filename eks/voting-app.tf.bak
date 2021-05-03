@@ -70,7 +70,7 @@ resource "kubernetes_service" "vote" {
     }
 
     port {
-      port        = 31002
+      port        = 80
       target_port = 80
       protocol    = "TCP"
     }
@@ -132,7 +132,7 @@ resource "kubernetes_service" "vote-ui" {
     }
 
     port {
-      port        = 31000
+      port        = 80
       target_port = 80
       protocol    = "TCP"
     }
@@ -161,7 +161,7 @@ resource "kubernetes_ingress" "vote-ui" {
     rule {
       http {
         path {
-          path = "/"
+          path = "/*"
           backend {
             service_name = "vote-ui"
             service_port = 80
@@ -225,7 +225,7 @@ resource "kubernetes_service" "result" {
     }
 
     port {
-      port        = 31003
+      port        = 80
       target_port = 80
       protocol    = "TCP"
     }
@@ -287,7 +287,7 @@ resource "kubernetes_service" "result-ui" {
     }
 
     port {
-      port        = 31001
+      port        = 80
       target_port = 80
       protocol    = "TCP"
     }
@@ -316,7 +316,7 @@ resource "kubernetes_ingress" "result-ui" {
     rule {
       http {
         path {
-          path = "/"
+          path = "/*"
           backend {
             service_name = "result-ui"
             service_port = 80
